@@ -85,9 +85,9 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
         self.assertEqual(p.after, b'.?')
 
     def test_expect_eof(self):
-        the_old_way = subprocess.Popen(args=['/bin/ls', '-l', '/bin'],
+        the_old_way = subprocess.Popen(args=['ls', '-l', '~'],
                                        stdout=subprocess.PIPE).communicate()[0].rstrip()
-        p = PopenSpawn('/bin/ls -l /bin')
+        p = PopenSpawn('ls -l ~')
         # This basically tells it to read everything. Same as pexpect.run()
         # function.
         p.expect(pexpect.EOF)
