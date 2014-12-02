@@ -68,7 +68,11 @@ import types
 
 from .exceptions import ExceptionPexpect, EOF, TIMEOUT
 from .utils import split_command_line, which, is_executable_file
-from .pty_spawn import spawn, spawnu, PY3
+if sys.platform == 'win32':
+    from .popen_spawn import (
+        PopenSpawn as spawn, PopenSpawnUnicode as spawnu, PY3)
+else:
+    from .pty_spawn import spawn, spawnu, PY3
 from .expect import Expecter, searcher_re, searcher_string
 
 __version__ = '3.3'
@@ -139,7 +143,7 @@ def run(command, timeout=30, withexitstatus=False, events=None,
     contains patterns and responses. Whenever one of the patterns is seen
     in the command output, run() will send the associated response string.
     So, run() in the above example can be also written as:
-    
+
         run("mencoder dvd://1 -o video.avi -oac copy -ovc copy",
             events=[(TIMEOUT,print_ticks)], timeout=5)
 
