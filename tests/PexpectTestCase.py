@@ -34,6 +34,9 @@ class PexpectTestCase(unittest.TestCase):
         tests_dir = os.path.dirname(__file__)
         self.project_dir = project_dir = os.path.dirname(tests_dir)
 
+        if sys.platform == 'win32':
+            signal.SIGHUP = signal.SIGINT
+
         # all tests are executed in this folder; there are many auxiliary
         # programs in this folder executed by spawn().
         os.chdir(tests_dir)
