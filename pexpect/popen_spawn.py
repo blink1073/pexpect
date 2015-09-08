@@ -153,8 +153,7 @@ class PopenSpawn(SpawnBase):
         os.kill(self.proc.pid, sig)
 
     def sendeof(self):
-        if sys.platform == 'win32':
-            self.proc.stdin.close()
+        self.proc.stdin.close()
 
 
 class PopenSpawnUnicode(SpawnBaseUnicode, PopenSpawn):
