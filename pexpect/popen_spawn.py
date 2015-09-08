@@ -115,20 +115,20 @@ class PopenSpawn(SpawnBase):
             self.send(s)
 
     def _send(self, s):
-        self.proc.stdin.write(s)
+        return self.proc.stdin.write(s)
 
     def send(self, s):
         s = self._coerce_send_string(s)
         self._log(s, 'send')
 
-        self._send(s)
+        return self._send(s)
 
     def sendline(self, s=''):
         '''Wraps send(), sending string ``s`` to child process, with os.linesep
         automatically appended. Returns number of bytes written. '''
 
-        self.send(s)
-        self.send(self.linesep)
+        n = self.send(s)
+        return n + self.send(self.linesep)
 
     def wait(self):
         status = self.proc.wait()
@@ -155,8 +155,6 @@ class PopenSpawn(SpawnBase):
     def sendeof(self):
         if sys.platform == 'win32':
             self.proc.stdin.close()
-        else:
-            self.kill(signal.SIGTERM)
 
 
 class PopenSpawnUnicode(SpawnBaseUnicode, PopenSpawn):
