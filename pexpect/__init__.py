@@ -70,10 +70,13 @@ from .exceptions import ExceptionPexpect, EOF, TIMEOUT
 from .utils import split_command_line, which, is_executable_file
 from .expect import Expecter, searcher_re, searcher_string
 
+ # These are available at the top level for backwards compatibility
 if sys.platform != 'win32':
-    # On Unix, these are available at the top level for backwards compatibility
     from .pty_spawn import spawn, spawnu
-    from .run import run, runu
+else:
+    from .winpty_spawn import spawn, spawnu
+
+from .run import run, runu
 
 __version__ = '4.3.0'
 __revision__ = ''

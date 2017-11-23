@@ -2,7 +2,12 @@ import sys
 import types
 
 from .exceptions import EOF, TIMEOUT
-from .pty_spawn import spawn
+
+try:
+    from .pty_spawn import spawn
+except ImportError:
+    from .winpty_spawn import spawn
+
 
 def run(command, timeout=30, withexitstatus=False, events=None,
         extra_args=None, logfile=None, cwd=None, env=None, **kwargs):

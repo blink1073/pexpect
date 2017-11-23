@@ -27,6 +27,11 @@ import sys
 import os
 
 
+# Patch for missing signal on Windows
+if os.name == 'nt':
+    signal.SIGHUP = signal.SIGINT
+
+
 class PexpectTestCase(unittest.TestCase):
     def setUp(self):
         self.PYTHONBIN = sys.executable

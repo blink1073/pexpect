@@ -26,8 +26,12 @@ from . import PexpectTestCase
 import time
 import sys
 
-from ptyprocess import ptyprocess
-ptyprocess._make_eof_intr()
+
+try:
+    from ptyprocess import ptyprocess  # only needed on posix
+    ptyprocess._make_eof_intr()
+except ImportError:
+    pass
 
 if sys.version_info[0] >= 3:
     def byte(i):
