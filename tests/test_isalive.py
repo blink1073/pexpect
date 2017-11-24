@@ -20,10 +20,13 @@ PEXPECT LICENSE
 '''
 import pexpect
 import unittest
+import os
 import signal
 import sys
 import time
 from . import PexpectTestCase
+
+import pytest
 
 
 class IsAliveTestCase(PexpectTestCase.PexpectTestCase):
@@ -31,7 +34,7 @@ class IsAliveTestCase(PexpectTestCase.PexpectTestCase):
 
     def test_expect_wait(self):
         """Ensure consistency in wait() and isalive()."""
-        p = pexpect.spawn('sleep 1')
+        p = pexpect.spawn('%s -c "import time; time.sleep(1)"' % sys.executable)
         assert p.isalive()
         assert p.wait() == 0
         assert not p.isalive()
@@ -41,18 +44,22 @@ class IsAliveTestCase(PexpectTestCase.PexpectTestCase):
 
     def test_expect_wait_after_termination(self):
         """Ensure wait on a process terminated by kill -9."""
-        p = pexpect.spawn('sleep 3')
+        p = pexpect.spawn('%s -c "import time; time.sleep(3)"' % sys.executable)
         assert p.isalive()
         p.kill(9)
         time.sleep(1)
 
-        # when terminated, the exitstatus is None, but p.signalstatus
-        # and p.terminated reflects that the kill -9 nature.
-        assert p.wait() is None
-        assert p.signalstatus == 9
+        if os.name != 'nt':
+            # when terminated, the exitstatus is None, but p.signalstatus
+            # and p.terminated reflects that the kill -9 nature.
+            assert p.wait() is None
+            assert p.signalstatus == 9
+        else:
+            assert p.wait() == 9
         assert p.terminated == True
         assert not p.isalive()
 
+    @pytest.mark.skipif(os.name=='nt', reason="no signalstatus on Windows")
     def test_signal_wait(self):
         '''Test calling wait with a process terminated by a signal.'''
         if not hasattr(signal, 'SIGALRM'):
@@ -67,6 +74,7 @@ class IsAliveTestCase(PexpectTestCase.PexpectTestCase):
         p.expect(pexpect.EOF)
         assert not p.isalive()
 
+    @pytest.mark.skipif(os.name=='nt', reason="no SIGHUP on Windows")
     def test_expect_isalive_dead_after_SIGHUP(self):
         p = pexpect.spawn('cat', timeout=5, ignore_sighup=False)
         assert p.isalive()
