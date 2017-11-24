@@ -135,7 +135,7 @@ class spawn(SpawnBase):
                                     logfile=logfile, encoding=encoding, codec_errors='strict')
         self.cwd = cwd
         self.env = env
-        self._echo = echo
+        self.echo = echo
         self._encoding = encoding
         if command is None:
             self.command = None
@@ -245,6 +245,8 @@ class spawn(SpawnBase):
     def exitstatus(self):
         """The exit status of the process.
         """
+        if not hasattr(self, 'ptyproc'):
+            return None
         return self.ptyproc.exitstatus
 
     def read_nonblocking(self, size=1, timeout=-1):
@@ -319,7 +321,7 @@ class spawn(SpawnBase):
         return self.ptyproc.write(s)
 
     def _log(self, s, msg):
-        if not isinstance(s, bytes):
+        if not self.encoding and not isinstance(s, bytes):
             s = s.encode('utf-8')
         super()._log(s, msg)
 
@@ -339,8 +341,6 @@ class spawn(SpawnBase):
 
     def _log_control(self, s):
         """Write control characters to the appropriate log files"""
-        if self._encoding is not None:
-            s = s.decode(self._encoding, 'replace')
         self._log(s, 'send')
 
     def sendcontrol(self, char):
@@ -383,12 +383,12 @@ class spawn(SpawnBase):
 
     def getecho(self):
         '''This is a stub for compatibility with the pty version '''
-        return self._echo
+        return self.echo
 
     def setecho(self, state):
         """This is a stub for compatibility with the pty version
         """
-        self._echo = state
+        self.echo = state
 
     @property
     def flag_eof(self):

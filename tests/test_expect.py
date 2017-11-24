@@ -38,7 +38,7 @@ from .utils import no_coverage_env
 FILTER=''.join([(len(repr(chr(x)))==3) and chr(x) or '.' for x in range(256)])
 def hex_dump(src, length=16):
     result=[]
-    for i in xrange(0, len(src), length):
+    for i in range(0, len(src), length):
        s = src[i:i+length]
        hexa = ' '.join(["%02X"%ord(x) for x in s])
        printable = s.translate(FILTER)
@@ -375,9 +375,9 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
         self.assertEqual(p.after, b'.?')
 
     def test_expect_eof (self):
-        the_old_way = subprocess.Popen(args=['/bin/ls', '-l', '/bin'],
+        the_old_way = subprocess.Popen(args=['ls', '-l', '/bin'],
                 stdout=subprocess.PIPE).communicate()[0].rstrip()
-        p = pexpect.spawn('/bin/ls -l /bin')
+        p = pexpect.spawn('ls -l /bin')
         p.expect(pexpect.EOF) # This basically tells it to read everything. Same as pexpect.run() function.
         the_new_way = p.before
         the_new_way = the_new_way.replace(b'\r\n', b'\n'
@@ -404,6 +404,11 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
         p.timeout = 5
 
         p.expect(b'5')
+        if os.name == 'nt':
+            assert p.after == b'5'
+            assert b'[0, 1, 2' in p.before
+            return
+
         self.assertEqual(p.after, b'5')
         assert p.before.startswith(b'[0, 1, 2'), p.before
 
