@@ -283,10 +283,9 @@ class spawn(SpawnBase):
                 s = self.ptyproc.read(size)
             except EOFError as e:
                 raise EOF(str(e))
+            self._log(s, 'read')
             if self._encoding is None:
                 s = s.encode('utf-8')
-            print(s, type(s))
-            self._log(s, 'read')
             return s
 
         raise ExceptionPexpect('Reached an unexpected state.')  # pragma: no cover
@@ -318,6 +317,11 @@ class spawn(SpawnBase):
         s = self._coerce_send_string(s)
         self._log(s, 'send')
         return self.ptyproc.write(s)
+
+    def _log(self, s, msg):
+        if not isinstance(s, bytes):
+            s = s.encode('utf-8')
+        super()._log(s, msg)
 
     def _coerce_send_string(self, s):
         if isinstance(s, bytes):

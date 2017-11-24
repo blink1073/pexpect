@@ -8,3 +8,4 @@ if os.name == 'nt':
     collect_ignore.append('tests/test_dotall.py')
     collect_ignore.append('tests/test_expect.py')
     collect_ignore.append('tests/test_interact.py')
+    collect_ignore.append('tests/test_log.py')
