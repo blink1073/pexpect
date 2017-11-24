@@ -1,4 +1,4 @@
-import codecs
+
 import os
 import time
 import shlex
@@ -282,7 +282,7 @@ class spawn(SpawnBase):
             try:
                 s = self.ptyproc.read(size)
             except EOFError as e:
-                raise EOF(str(e))
+                raise EOF(*e.args)
             self._log(s, 'read')
             if self._encoding is None:
                 s = s.encode('utf-8')
