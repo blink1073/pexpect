@@ -58,6 +58,9 @@ def which(filename, env=None):
     p = env.get('PATH')
     if not p:
         p = os.defpath
+    if os.name == 'nt':
+        from shutil import which as _which
+        return _which(filename, path=p)
     pathlist = p.split(os.pathsep)
     for path in pathlist:
         ff = os.path.join(path, filename)

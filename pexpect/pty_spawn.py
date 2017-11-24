@@ -189,6 +189,7 @@ class spawn(SpawnBase):
         self.env = env
         self.echo = echo
         self.ignore_sighup = ignore_sighup
+        self.exitstatus = None
         self.__irix_hack = sys.platform.lower().startswith('irix')
         if command is None:
             self.command = None

@@ -42,7 +42,6 @@ class SpawnBase(object):
         self.match = None
         self.match_index = None
         self.terminated = True
-        self.exitstatus = None
         self.signalstatus = None
         # status returned by os.waitpid
         self.status = None

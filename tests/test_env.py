@@ -24,6 +24,7 @@ import tempfile
 import unittest
 
 import pexpect
+from pexpect import which
 from . import PexpectTestCase
 
 
@@ -44,6 +45,10 @@ def example_script(name, output='success'):
         os.rmdir(tempdir)
 
 
+EXE = ''
+if os.name == 'nt':
+    EXE = which('bash') + ' '
+
 class TestCaseEnv(PexpectTestCase.PexpectTestCase):
     " tests for the env argument to pexpect.spawn and pexpect.run "
 
@@ -53,8 +58,8 @@ class TestCaseEnv(PexpectTestCase.PexpectTestCase):
         environ = {'PEXPECT_TEST_KEY': 'pexpect test value'}
         with example_script(script_name, '$PEXPECT_TEST_KEY') as script_dir:
             script = os.path.join(script_dir, script_name)
-            out = pexpect.run(script, env=environ)
-        self.assertEqual(out.rstrip(), b'pexpect test value')
+            out = pexpect.run(EXE + script, env=environ)
+        assert b'pexpect test value' in out
 
     def test_spawn_uses_env(self):
         " pexpect.spawn uses env argument when running child process "
@@ -62,18 +67,18 @@ class TestCaseEnv(PexpectTestCase.PexpectTestCase):
         environ = {'PEXPECT_TEST_KEY': 'pexpect test value'}
         with example_script(script_name, '$PEXPECT_TEST_KEY') as script_dir:
             script = os.path.join(script_dir, script_name)
-            child = pexpect.spawn(script, env=environ)
+            child = pexpect.spawn(EXE + script, env=environ)
             out = child.readline()
             child.expect(pexpect.EOF)
         self.assertEqual(child.exitstatus, 0)
-        self.assertEqual(out.rstrip(), b'pexpect test value')
+        assert b'pexpect test value' in out
 
     def test_run_uses_env_path(self):
         " pexpect.run uses binary from PATH when given in env argument "
         script_name = 'run_uses_env_path.sh'
         with example_script(script_name) as script_dir:
-            out = pexpect.run(script_name, env={'PATH': script_dir})
-        self.assertEqual(out.rstrip(), b'success')
+            out = pexpect.run(EXE + script_name, env={'PATH': script_dir})
+        assert b'success' in out
 
     def test_run_uses_env_path_over_path(self):
         " pexpect.run uses PATH from env over os.environ "
@@ -83,10 +88,10 @@ class TestCaseEnv(PexpectTestCase.PexpectTestCase):
                 orig_path = os.environ['PATH']
                 os.environ['PATH'] = wrong_dir
                 try:
-                    out = pexpect.run(script_name, env={'PATH': right_dir})
+                    out = pexpect.run(EXE + script_name, env={'PATH': right_dir})
                 finally:
                     os.environ['PATH'] = orig_path
-        self.assertEqual(out.rstrip(), b'success')
+        assert b'success' in out
 
 
 if __name__ == '__main__':

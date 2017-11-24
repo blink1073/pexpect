@@ -37,9 +37,9 @@ class TestCaseConstructor(PexpectTestCase.PexpectTestCase):
     def test_named_parameters (self):
         '''This tests that named parameters work.
         '''
-        p = pexpect.spawn ('/bin/ls',timeout=10)
-        p = pexpect.spawn (timeout=10, command='/bin/ls')
-        p = pexpect.spawn (args=[], command='/bin/ls')
+        p = pexpect.spawn ('ls',timeout=10)
+        p = pexpect.spawn (timeout=10, command='ls')
+        p = pexpect.spawn (args=[], command='ls')
 
 if __name__ == '__main__':
     unittest.main()

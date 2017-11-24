@@ -6,7 +6,7 @@ import signal
 
 from winpty import PtyProcess
 
-from .exceptions import ExceptionPexpect, TIMEOUT
+from .exceptions import ExceptionPexpect, TIMEOUT, EOF
 from .spawnbase import SpawnBase
 from .utils import select_ignore_interrupts
 
@@ -132,13 +132,11 @@ class spawn(SpawnBase):
         columns). If this is unspecified, the defaults in winpty will apply.
         '''
         super(spawn, self).__init__(timeout=timeout, maxread=maxread, searchwindowsize=searchwindowsize,
-                                    logfile=logfile, encoding=encoding, codec_errors=codec_errors)
+                                    logfile=logfile, encoding=encoding, codec_errors='strict')
         self.cwd = cwd
         self.env = env
         self._echo = echo
-        if self.encoding is None:
-            self._encoder = codecs.getincrementalencoder('utf-8')(codec_errors)
-            self.linesep = self.linesep.decode('utf-8')
+        self._encoding = encoding
         if command is None:
             self.command = None
             self.args = None
@@ -243,6 +241,12 @@ class spawn(SpawnBase):
 
         return self.ptyproc.isatty()
 
+    @property
+    def exitstatus(self):
+        """The exit status of the process.
+        """
+        return self.ptyproc.exitstatus
+
     def read_nonblocking(self, size=1, timeout=-1):
         '''This reads at most size characters from the child application. It
         includes a timeout. If the read does not complete within the timeout
@@ -275,10 +279,14 @@ class spawn(SpawnBase):
             raise TIMEOUT('Timeout exceeded.')
 
         if self.child_fd in r:
-            s = self.ptyproc.read(size)
-            s = self._encoder.encode(s, final=False)
+            try:
+                s = self.ptyproc.read(size)
+            except EOFError as e:
+                raise EOF(str(e))
+            if self._encoding is None:
+                s = s.encode('utf-8')
+            print(s, type(s))
             self._log(s, 'read')
-            s = self._decoder.decode(s, final=False)
             return s
 
         raise ExceptionPexpect('Reached an unexpected state.')  # pragma: no cover
@@ -323,12 +331,12 @@ class spawn(SpawnBase):
         line in the default terminal mode, see docstring of :meth:`send`.
         '''
         s = self._coerce_send_string(s)
-        return self.send(s + self.linesep)
+        return self.send(s + self._coerce_send_string(self.linesep))
 
     def _log_control(self, s):
         """Write control characters to the appropriate log files"""
-        if self.encoding is not None:
-            s = s.decode(self.encoding, 'replace')
+        if self._encoding is not None:
+            s = s.decode(self._encoding, 'replace')
         self._log(s, 'send')
 
     def sendcontrol(self, char):
@@ -436,11 +444,10 @@ class spawn(SpawnBase):
         '''
 
         ptyproc = self.ptyproc
-        exitstatus = ptyproc.wait()
-        self.exitstatus = ptyproc.exitstatus
+        ptyproc.wait()
         self.terminated = True
 
-        return exitstatus
+        return self.exitstatus
 
     def isalive(self):
         '''This tests if the child process is running or not. This is
@@ -453,7 +460,6 @@ class spawn(SpawnBase):
         alive = ptyproc.isalive()
 
         if not alive:
-            self.exitstatus = ptyproc.exitstatus
             self.terminated = True
 
         return alive
