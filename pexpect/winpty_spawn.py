@@ -135,7 +135,6 @@ class spawn(SpawnBase):
                                     logfile=logfile, encoding=encoding, codec_errors='strict')
         self.cwd = cwd
         self.env = env
-        self.echo = echo
         self._encoding = encoding
         if command is None:
             self.command = None
@@ -178,6 +177,12 @@ class spawn(SpawnBase):
         s.append('delayafterterminate: ' + str(self.delayafterterminate))
         return '\n'.join(s)
 
+    @property
+    def echo(self):
+        """Winpty always echoes.
+        """
+        return True
+
     def _spawn(self, command, args=[], dimensions=None):
         '''This starts the given command in a child process. This is called by __init__.
         If args is empty then command will be parsed (split on spaces) and args will be
@@ -205,7 +210,7 @@ class spawn(SpawnBase):
         assert self.pid is None, 'The pid member must be None.'
         assert command is not None, 'The command member must not be None.'
 
-        kwargs = dict()
+        kwargs = dict(emit_cursors=False)
         if dimensions is not None:
             kwargs['dimensions'] = dimensions
 
@@ -377,18 +382,18 @@ class spawn(SpawnBase):
         self._log_control(byte)
 
     def waitnoecho(self, timeout=-1):
-        '''This is a stub for compatibility with the pty versio
+        '''This is a stub for compatibility with the pty version
         '''
         return
 
     def getecho(self):
         '''This is a stub for compatibility with the pty version '''
-        return self.echo
+        return True
 
     def setecho(self, state):
         """This is a stub for compatibility with the pty version
         """
-        self.echo = state
+        pass
 
     @property
     def flag_eof(self):

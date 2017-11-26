@@ -1,6 +1,7 @@
 """Generic wrapper for read-eval-print-loops, a.k.a. interactive shells
 """
 import os.path
+import re
 import signal
 import sys
 
@@ -29,11 +30,13 @@ class REPLWrapper(object):
     :param str new_prompt: The more unique prompt to expect after the change.
     :param str extra_init_cmd: Commands to do extra initialisation, such as
       disabling pagers.
+    :param bool double_prompt: On Windows, some commands (e.g. `bash`), may emit a
+    double prompt.  We expect to get the prompt twice.
     """
     def __init__(self, cmd_or_spawn, orig_prompt, prompt_change,
                  new_prompt=PEXPECT_PROMPT,
                  continuation_prompt=PEXPECT_CONTINUATION_PROMPT,
-                 extra_init_cmd=None):
+                 extra_init_cmd=None, double_prompt=False):
         if isinstance(cmd_or_spawn, basestring):
             self.child = pexpect.spawn(cmd_or_spawn, echo=False, encoding='utf-8')
         else:
@@ -52,6 +55,15 @@ class REPLWrapper(object):
             self.prompt = new_prompt
         self.continuation_prompt = continuation_prompt
 
+        # Handle double prompts.
+        self._double_prompt = False
+
+        if double_prompt:
+            self._double_prompt = True
+            self._prompt = r'{0}\r\n{0}'.format(re.escape(self.prompt))
+            self._continuation_prompt = r'{0}\r\n{0}|{0}'.format(
+                re.escape(self.continuation_prompt))
+
         self._expect_prompt()
 
         if extra_init_cmd is not None:
@@ -59,11 +71,20 @@ class REPLWrapper(object):
 
     def set_prompt(self, orig_prompt, prompt_change):
         self.child.expect(orig_prompt)
-        self.child.sendline(prompt_change)
+        self._sendline(prompt_change)
+
+    def _sendline(self, line):
+        self.child.sendline(line)
+        # If the child does not support no echo mode.
+        if self.child.echo:
+            self.child.readline()
 
     def _expect_prompt(self, timeout=-1):
+        if self._double_prompt:
+            return self.child.expect([self._prompt, self._continuation_prompt],
+                                      timeout=timeout)
         return self.child.expect_exact([self.prompt, self.continuation_prompt],
-                                       timeout=timeout)
+                                  timeout=timeout)
 
     def run_command(self, command, timeout=-1):
         """Send a command to the REPL, wait for and return output.
@@ -85,24 +106,39 @@ class REPLWrapper(object):
             raise ValueError("No command was given")
 
         res = []
-        self.child.sendline(cmdlines[0])
+        self._sendline(cmdlines[0])
         for line in cmdlines[1:]:
             self._expect_prompt(timeout=timeout)
             res.append(self.child.before)
-            self.child.sendline(line)
+            self._sendline(line)
 
         # Command was fully submitted, now wait for the next prompt
         if self._expect_prompt(timeout=timeout) == 1:
             # We got the continuation prompt - command was incomplete
-            self.child.kill(signal.SIGINT)
-            self._expect_prompt(timeout=1)
+            if os.name == 'nt':
+                self.child.sendintr()
+                self.child.expect_exact([self.prompt], timeout=2)
+            else:
+                self.child.kill(signal.SIGINT)
+                self._expect_prompt(timeout=1)
             raise ValueError("Continuation prompt found - input was incomplete:\n"
                              + command)
-        return u''.join(res + [self.child.before])
+
+        val = u''.join(res + [self.child.before])
+
+        # Double prompts can leak into continuation lines.
+        if self._double_prompt:
+            lines = []
+            for line in val.splitlines():
+                if not line.startswith(self.prompt):
+                    lines.append(line)
+            val = self.child.linesep.join(lines)
+
+        return val
 
 def python(command="python"):
     """Start a Python shell and return a :class:`REPLWrapper` object."""
-    return REPLWrapper(command, u">>> ", u"import sys; sys.ps1={0!r}; sys.ps2={1!r}")
+    return REPLWrapper(command, u">>>", u"import sys; sys.ps1={0!r}; sys.ps2={1!r}")
 
 def bash(command="bash"):
     """Start a bash shell and return a :class:`REPLWrapper` object."""
@@ -119,4 +155,5 @@ def bash(command="bash"):
     prompt_change = u"PS1='{0}' PS2='{1}' PROMPT_COMMAND=''".format(ps1, ps2)
 
     return REPLWrapper(child, u'\\$', prompt_change,
-                       extra_init_cmd="export PAGER=cat")
+                       extra_init_cmd="export PAGER=cat",
+                       double_prompt=os.name=='nt')
