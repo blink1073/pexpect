@@ -27,6 +27,7 @@ import sys
 import os
 
 import pexpect
+import pytest
 from . import PexpectTestCase
 from .utils import no_coverage_env
 
@@ -161,6 +162,7 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
             pexpect.EOF])
         assert index == 3, (index, p.before, p.after)
 
+    @pytest.mark.skipif(os.name=='nt', reason='Echo off not supported on Windows')
     def test_expect_setecho_off(self):
         '''This tests that echo may be toggled off.
         '''
@@ -174,6 +176,7 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
                 return 'skip'
             raise
 
+    @pytest.mark.skipif(os.name=='nt', reason='Echo off not supported on Windows')
     def test_expect_setecho_off_exact(self):
         p = pexpect.spawn('cat', echo=True, timeout=5)
         p.expect = p.expect_exact
@@ -186,6 +189,7 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
                 return 'skip'
             raise
 
+    @pytest.mark.skipif(os.name=='nt', reason='Echo off not supported on Windows')
     def test_waitnoecho(self):
         " Tests setecho(False) followed by waitnoecho() "
         p = pexpect.spawn('cat', echo=False, timeout=5)
@@ -199,6 +203,7 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
                 return 'skip'
             raise
 
+    @pytest.mark.skipif(os.name=='nt', reason='Echo off not supported on Windows')
     def test_waitnoecho_order(self):
 
         ''' This tests that we can wait on a child process to set echo mode.
@@ -529,6 +534,7 @@ class ExpectTestCase (PexpectTestCase.PexpectTestCase):
         p.expect_exact('def')
         p.expect(pexpect.EOF)
 
+    @pytest.mark.skipif(os.name=='nt', reason='SIGALARM supported on Windows')
     def test_signal_handling(self):
         '''
             This tests the error handling of a signal interrupt (usually a

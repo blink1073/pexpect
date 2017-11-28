@@ -6,7 +6,6 @@ if os.name == 'nt':
     collect_ignore.append('tests/test_ctrl_chars.py')
     collect_ignore.append('tests/test_destructor.py')
     collect_ignore.append('tests/test_dotall.py')
-    collect_ignore.append('tests/test_expect.py')
     collect_ignore.append('tests/test_interact.py')
     collect_ignore.append('tests/test_log.py')
     collect_ignore.append('tests/test_misc.py')
