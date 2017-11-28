@@ -41,6 +41,7 @@ class REPLWrapper(object):
             self.child = pexpect.spawn(cmd_or_spawn, echo=False, encoding='utf-8')
         else:
             self.child = cmd_or_spawn
+
         if self.child.echo:
             # Existing spawn instance has echo enabled, disable it
             # to prevent our input from being repeated to output.
@@ -54,15 +55,6 @@ class REPLWrapper(object):
                         prompt_change.format(new_prompt, continuation_prompt))
             self.prompt = new_prompt
         self.continuation_prompt = continuation_prompt
-
-        # Handle double prompts.
-        self._double_prompt = False
-
-        if double_prompt:
-            self._double_prompt = True
-            self._prompt = r'{0}\r\n{0}'.format(re.escape(self.prompt))
-            self._continuation_prompt = r'{0}\r\n{0}|{0}'.format(
-                re.escape(self.continuation_prompt))
 
         self._expect_prompt()
 
@@ -124,17 +116,8 @@ class REPLWrapper(object):
             raise ValueError("Continuation prompt found - input was incomplete:\n"
                              + command)
 
-        val = u''.join(res + [self.child.before])
+        return u''.join(res + [self.child.before])
 
-        # Double prompts can leak into continuation lines.
-        if self._double_prompt:
-            lines = []
-            for line in val.splitlines():
-                if not line.startswith(self.prompt):
-                    lines.append(line)
-            val = self.child.linesep.join(lines)
-
-        return val
 
 def python(command="python"):
     """Start a Python shell and return a :class:`REPLWrapper` object."""
@@ -145,6 +128,8 @@ def bash(command="bash"):
     bashrc = os.path.join(os.path.dirname(__file__), 'bashrc.sh')
     child = pexpect.spawn(command, ['--rcfile', bashrc], echo=False,
                           encoding='utf-8')
+    # Bash should always have a linesep of `\n`.
+    child.linesep = '\n'
 
     # If the user runs 'env', the value of PS1 will be in the output. To avoid
     # replwrap seeing that as the next prompt, we'll embed the marker characters
@@ -155,5 +140,4 @@ def bash(command="bash"):
     prompt_change = u"PS1='{0}' PS2='{1}' PROMPT_COMMAND=''".format(ps1, ps2)
 
     return REPLWrapper(child, u'\\$', prompt_change,
-                       extra_init_cmd="export PAGER=cat",
-                       double_prompt=os.name=='nt')
+                       extra_init_cmd="export PAGER=cat")

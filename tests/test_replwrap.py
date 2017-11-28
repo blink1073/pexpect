@@ -87,6 +87,8 @@ class REPLWrapTestCase(unittest.TestCase):
 
     def test_existing_spawn(self):
         child = pexpect.spawn("bash", timeout=5, echo=False, encoding='utf-8')
+        # Bash should always have a linesep of `\n`.
+        child.linesep = '\n'
         repl = replwrap.REPLWrapper(child, re.compile('[$#]'),
                                     "PS1='{0}' PS2='{1}' "
                                     "PROMPT_COMMAND=''",
